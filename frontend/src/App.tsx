@@ -25,6 +25,10 @@ type Document = {
   created_at: string
 }
 
+type DocumentDetail = Document & {
+  extracted_text: string
+}
+
 function formatFileSize(bytes: number | null) {
   if (!bytes) return 'Unknown size'
 
@@ -63,6 +67,12 @@ function App() {
     useState(false)
 
   const [isDragging, setIsDragging] =
+    useState(false)
+
+  const [selectedDocument, setSelectedDocument] =
+    useState<DocumentDetail | null>(null)
+
+  const [isLoadingDocument, setIsLoadingDocument] =
     useState(false)
 
   const fileInputRef =
@@ -116,6 +126,78 @@ function App() {
       )
     }
   }
+  async function openDocument(
+  documentId: number
+) {
+  try {
+    setIsLoadingDocument(true)
+
+    const response = await fetch(
+      `${API_URL}/api/documents/${documentId}`
+    )
+
+    if (!response.ok) {
+      throw new Error(
+        'Could not load document'
+      )
+    }
+
+    const data =
+      await response.json()
+
+    setSelectedDocument(data)
+  } catch {
+    setUploadStatus(
+      'Could not load document details'
+    )
+  } finally {
+    setIsLoadingDocument(false)
+  }
+  }
+  async function deleteDocument(
+  documentId: number
+) {
+  const confirmed = window.confirm(
+    'Are you sure you want to delete this document?'
+  )
+
+  if (!confirmed) return
+
+  try {
+    const response = await fetch(
+      `${API_URL}/api/documents/${documentId}`,
+      {
+        method: 'DELETE',
+      }
+    )
+
+    if (!response.ok) {
+      throw new Error(
+        'Could not delete document'
+      )
+    }
+
+    if (
+      selectedDocument?.id === documentId
+    ) {
+      setSelectedDocument(null)
+    }
+
+    setUploadStatus(
+      'Document deleted successfully.'
+    )
+
+    await loadDocuments()
+  } catch (error) {
+    if (error instanceof Error) {
+      setUploadStatus(error.message)
+    } else {
+      setUploadStatus(
+        'Could not delete document'
+      )
+    }
+  }
+}
 
   function validateFile(file: File) {
     const allowedTypes = [
@@ -463,6 +545,9 @@ function App() {
                 <article
                   className="documentCard"
                   key={document.id}
+                  onClick={() =>
+                    openDocument(document.id)
+                  }
                 >
                   <div className="documentTop">
                     <div className="documentIcon">
@@ -486,6 +571,7 @@ function App() {
                   </p>
 
                   <div className="metadata">
+                    
                     <span>
                       <strong>
                         Type
@@ -512,12 +598,33 @@ function App() {
                       )}
                     </span>
                   </div>
+
+                  <button
+                  className="deleteButton"
+                    onClick={(event) => {
+                    event.stopPropagation()
+                    deleteDocument(document.id)
+                  }}
+  >
+                Delete
+                </button>
                 </article>
               )
             )}
           </div>
         )}
       </section>
+        {selectedDocument && (
+          <section className="documentDetail">
+            ...
+          </section>
+        )}
+
+        {isLoadingDocument && (
+          <p className="loadingText">
+          Loading document...
+         </p>
+       )}
     </main>
   )
 }

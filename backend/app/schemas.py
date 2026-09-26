@@ -16,3 +16,7 @@ class DocumentResponse(BaseModel):
     model_config = ConfigDict(
         from_attributes=True
     )
+
+
+class DocumentDetailResponse(DocumentResponse):
+    extracted_text: str

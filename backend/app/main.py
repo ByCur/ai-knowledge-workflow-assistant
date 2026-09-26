@@ -13,6 +13,7 @@ from fastapi import (
 from .document_service import extract_text
 
 from contextlib import asynccontextmanager
+from .schemas import DocumentDetailResponse, DocumentResponse
 
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -111,6 +112,57 @@ def list_documents(
     )
 
     return result.scalars().all()
+@app.get(
+    "/api/documents/{document_id}",
+    response_model=DocumentDetailResponse,
+)
+def get_document(
+    document_id: int,
+    db: Session = Depends(get_db),
+):
+    document = db.get(
+        Document,
+        document_id
+    )
+
+    if not document:
+        raise HTTPException(
+            status_code=404,
+            detail="Document not found",
+        )
+
+    return document
+
+@app.delete(
+    "/api/documents/{document_id}",
+    status_code=200,
+)
+def delete_document(
+    document_id: int,
+    db: Session = Depends(get_db),
+):
+    document = db.get(
+        Document,
+        document_id
+    )
+
+    if not document:
+        raise HTTPException(
+            status_code=404,
+            detail="Document not found",
+        )
+
+    if document.file_path:
+        file_path = Path(document.file_path)
+        file_path.unlink(missing_ok=True)
+
+    db.delete(document)
+    db.commit()
+
+    return {
+        "message": "Document deleted successfully",
+        "id": document_id,
+    }
 
 
 @app.post(
