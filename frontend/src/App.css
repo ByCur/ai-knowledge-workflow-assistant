@@ -412,6 +412,11 @@ textarea {
   background: #ddf7e9;
 }
 
+.documentStatus.indexed {
+  color: #4338ca;
+  background: #e9e7ff;
+}
+
 .documentCard h3 {
   margin: 18px 0 8px;
 
@@ -466,9 +471,7 @@ textarea {
   color: #25304b;
 }
 
-@media (
-  max-width: 850px
-) {
+@media (max-width: 850px) {
   .page {
     width:
       min(
@@ -491,6 +494,7 @@ textarea {
   .knowledgeSection {
     padding: 22px;
   }
+}
 
   .documentCard {
   cursor: pointer;
@@ -619,4 +623,309 @@ textarea {
   background: #ffe1e6;
   transform: translateY(-1px);
 }
+
+.aiSection {
+  margin-bottom: 26px;
+  padding: 30px;
+
+  border:
+    1px solid
+    rgba(110, 125, 170, 0.2);
+
+  border-radius: 28px;
+
+  background:
+    rgba(255, 255, 255, 0.96);
+
+  box-shadow:
+    0 18px 45px
+    rgba(30, 45, 90, 0.08);
 }
+
+.aiBadge {
+  display: inline-flex;
+
+  margin-bottom: 10px;
+
+  padding: 7px 12px;
+
+  border-radius: 999px;
+
+  color: #4438c8;
+  background: #eceaff;
+
+  font-size: 12px;
+  font-weight: 900;
+
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.askForm {
+  display: grid;
+  gap: 14px;
+}
+
+.askForm textarea {
+  width: 100%;
+  min-height: 120px;
+
+  padding: 18px;
+
+  border:
+    1px solid
+    #d2daf0;
+
+  border-radius: 18px;
+
+  color: #172033;
+  background: white;
+
+  resize: vertical;
+  outline: none;
+}
+
+.askForm textarea:focus {
+  border-color: #6456e8;
+
+  box-shadow:
+    0 0 0 3px
+    rgba(100, 86, 232, 0.1);
+}
+
+.askForm button {
+  width: fit-content;
+
+  padding: 14px 28px;
+
+  border: 0;
+  border-radius: 16px;
+
+  color: white;
+
+  background:
+    linear-gradient(
+      135deg,
+      #4235c7,
+      #725cff
+    );
+
+  font-weight: 800;
+
+  cursor: pointer;
+}
+
+.askForm button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.aiError {
+  margin-top: 18px;
+  padding: 16px;
+
+  border-radius: 14px;
+
+  color: #a91e32;
+  background: #ffe8eb;
+
+  font-weight: 700;
+}
+
+.thinkingBox {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+
+  margin-top: 20px;
+  padding: 18px;
+
+  border-radius: 18px;
+
+  background: #f5f3ff;
+}
+
+.thinkingBox p {
+  margin: 4px 0 0;
+
+  color: #68738b;
+}
+
+.thinkingDot {
+  width: 16px;
+  height: 16px;
+
+  border-radius: 50%;
+
+  background: #6255e8;
+
+  animation:
+    pulse 1s infinite
+    alternate;
+}
+
+@keyframes pulse {
+  from {
+    opacity: 0.3;
+    transform: scale(0.8);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+.answerCard {
+  margin-top: 24px;
+  padding: 24px;
+
+  border:
+    1px solid
+    #dedff4;
+
+  border-radius: 22px;
+
+  background:
+    linear-gradient(
+      145deg,
+      #fafaff,
+      #f6f5ff
+    );
+}
+
+.answerHeader {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+
+  margin-bottom: 20px;
+}
+
+.aiAvatar {
+  display: grid;
+  place-items: center;
+
+  width: 48px;
+  height: 48px;
+
+  border-radius: 15px;
+
+  color: white;
+  background: #4639cc;
+
+  font-weight: 900;
+}
+
+.answerHeader div {
+  display: grid;
+  gap: 3px;
+}
+
+.answerHeader span {
+  color: #788198;
+
+  font-size: 13px;
+}
+
+.answerText {
+  white-space: pre-wrap;
+
+  color: #29344d;
+
+  font-size: 16px;
+  line-height: 1.7;
+}
+
+.sourcesSection {
+  margin-top: 26px;
+  padding-top: 22px;
+
+  border-top:
+    1px solid
+    #dcdff0;
+}
+
+.sourcesSection h3 {
+  margin-top: 0;
+}
+
+.sourceGrid {
+  display: grid;
+
+  grid-template-columns:
+    repeat(
+      auto-fit,
+      minmax(250px, 1fr)
+    );
+
+  gap: 14px;
+}
+
+.sourceCard {
+    display: block;
+  width: 100%;
+
+  padding: 18px;
+
+  border: 1px solid #daddf0;
+  border-radius: 16px;
+
+  color: inherit;
+  background: white;
+
+  text-align: left;
+  cursor: pointer;
+}
+
+.sourceCard:hover {
+  transform:
+    translateY(-2px);
+
+  box-shadow:
+    0 10px 24px
+    rgba(30, 45, 90, 0.08);
+}
+
+.sourceTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  margin-bottom: 10px;
+
+  color: #6457d8;
+
+  font-size: 12px;
+  font-weight: 900;
+
+  text-transform: uppercase;
+}
+
+.sourceCard p {
+  display: -webkit-box;
+  overflow: hidden;
+
+  margin: 10px 0;
+
+  color: #69748c;
+
+  line-height: 1.45;
+
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+}
+
+.sourceCard strong {
+  display: block;
+  margin-bottom: 10px;
+}
+
+.sourceCard small {
+  display: block;
+  margin-top: 10px;
+
+  color: #8890a3;
+}
+

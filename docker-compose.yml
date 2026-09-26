@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     container_name: ai-knowledge-db
     restart: unless-stopped
 
@@ -34,8 +34,10 @@ services:
     restart: unless-stopped
 
     environment:
+      
       DATABASE_URL: postgresql+psycopg://aiassistant:aiassistant_password@db:5432/aiassistant
       CORS_ORIGINS: http://localhost:5173
+      
 
     ports:
       - "8000:8000"

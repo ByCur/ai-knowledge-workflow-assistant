@@ -14,21 +14,33 @@ from .document_service import extract_text
 
 from contextlib import asynccontextmanager
 from .schemas import DocumentDetailResponse, DocumentResponse
-
+from .rag_service import generate_answer
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
-
+from .chunking_service import chunk_text
+from .embedding_service import create_embeddings
 from .config import settings
 from .database import (
     check_database_connection,
     create_tables,
     get_db,
 )
-from .models import Document
-from .schemas import DocumentResponse
-
+from .retrieval_service import (
+    retrieve_relevant_chunks,
+)
+from .models import Document, DocumentChunk
+from .schemas import (
+    ChunkResponse,
+    DocumentDetailResponse,
+    DocumentResponse,
+    IndexDocumentResponse,
+    SearchRequest,
+    AskRequest,
+    AskResponse,
+    SearchResult,
+)
 UPLOAD_DIR = Path("uploads")
 UPLOAD_DIR.mkdir(exist_ok=True)
 
@@ -133,6 +145,38 @@ def get_document(
 
     return document
 
+@app.get(
+    "/api/documents/{document_id}/chunks",
+    response_model=list[ChunkResponse],
+)
+def get_document_chunks(
+    document_id: int,
+    db: Session = Depends(get_db),
+):
+    document = db.get(
+        Document,
+        document_id,
+    )
+
+    if not document:
+        raise HTTPException(
+            status_code=404,
+            detail="Document not found",
+        )
+
+    result = db.execute(
+        select(DocumentChunk)
+        .where(
+            DocumentChunk.document_id
+            == document_id
+        )
+        .order_by(
+            DocumentChunk.chunk_index
+        )
+    )
+
+    return result.scalars().all()
+
 @app.delete(
     "/api/documents/{document_id}",
     status_code=200,
@@ -212,18 +256,150 @@ async def upload_document(
         )
 
     document = Document(
-        name=original_filename,
-        description=description,
-        original_filename=original_filename,
-        content_type=file.content_type,
-        file_path=str(file_path),
-        file_size=len(contents),
-        extracted_text=extracted_text,
-        status="processed",
-    )
+    name=original_filename,
+    description=description,
+    original_filename=original_filename,
+    content_type=file.content_type,
+    file_path=str(file_path),
+    file_size=len(contents),
+    extracted_text=extracted_text,
+    status="processing",
+)
 
     db.add(document)
     db.commit()
     db.refresh(document)
 
+    chunks = chunk_text(extracted_text)
+
+    if chunks:
+        embeddings = create_embeddings(chunks)
+
+        for index, content in enumerate(chunks):
+            db.add(
+                DocumentChunk(
+                document_id=document.id,
+                chunk_index=index,
+                content=content,
+                embedding=embeddings[index],
+            )
+        )
+
+        document.status = "indexed"
+
+
+    else:
+        document.status = "processed"
+
+    db.commit()
+    db.refresh(document)
+
     return document
+
+@app.post(
+    "/api/documents/{document_id}/index",
+    response_model=IndexDocumentResponse,
+)
+def index_document(
+    document_id: int,
+    db: Session = Depends(get_db),
+):
+    document = db.get(
+        Document,
+        document_id,
+    )
+
+    if not document:
+        raise HTTPException(
+            status_code=404,
+            detail="Document not found",
+        )
+
+    if not document.extracted_text.strip():
+        raise HTTPException(
+            status_code=400,
+            detail="Document has no extractable text",
+        )
+
+    chunks = chunk_text(
+        document.extracted_text
+    )
+
+    embeddings = create_embeddings(
+        chunks
+    )
+
+    db.execute(
+        delete(DocumentChunk).where(
+            DocumentChunk.document_id
+            == document_id
+        )
+    )
+
+    for index, content in enumerate(chunks):
+        db.add(
+            DocumentChunk(
+                document_id=document_id,
+                chunk_index=index,
+                content=content,
+                embedding=embeddings[index],
+            )
+        )
+
+    document.status = "indexed"
+
+    db.commit()
+
+    return {
+        "document_id": document_id,
+        "chunks_created": len(chunks),
+        "status": "indexed",
+    }
+
+@app.post(
+    "/api/search",
+    response_model=list[SearchResult],
+)
+def semantic_search(
+    search: SearchRequest,
+    db: Session = Depends(get_db),
+):
+    return retrieve_relevant_chunks(
+        db=db,
+        query=search.query,
+        limit=search.limit,
+    )
+
+@app.post(
+    "/api/ask",
+    response_model=AskResponse,
+)
+def ask_question(
+    request: AskRequest,
+    db: Session = Depends(get_db),
+):
+    sources = retrieve_relevant_chunks(
+        db=db,
+        query=request.question,
+        limit=3,
+    )
+
+    if not sources:
+        return {
+            "answer": (
+                "I don't have enough "
+                "information in the uploaded "
+                "documents to answer that."
+            ),
+            "sources": [],
+        }
+
+    answer = generate_answer(
+        question=request.question,
+        sources=sources,
+    )
+
+    return {
+        "answer": answer,
+        "sources": sources,
+    }

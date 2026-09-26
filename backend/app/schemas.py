@@ -20,3 +20,40 @@ class DocumentResponse(BaseModel):
 
 class DocumentDetailResponse(DocumentResponse):
     extracted_text: str
+
+class ChunkResponse(BaseModel):
+    id: int
+    document_id: int
+    chunk_index: int
+    content: str
+
+    model_config = ConfigDict(
+        from_attributes=True
+    )
+
+
+class IndexDocumentResponse(BaseModel):
+    document_id: int
+    chunks_created: int
+    status: str
+
+class SearchRequest(BaseModel):
+    query: str
+    limit: int = 5
+
+
+class SearchResult(BaseModel):
+    document_id: int
+    document_name: str
+    chunk_index: int
+    content: str
+    similarity: float
+
+class AskRequest(BaseModel):
+    question: str
+    
+
+
+class AskResponse(BaseModel):
+    answer: str
+    sources: list[SearchResult]

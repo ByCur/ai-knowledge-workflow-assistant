@@ -29,6 +29,19 @@ type DocumentDetail = Document & {
   extracted_text: string
 }
 
+type SearchSource = {
+  document_id: number
+  document_name: string
+  chunk_index: number
+  content: string
+  similarity: number
+}
+
+type AskResponse = {
+  answer: string
+  sources: SearchSource[]
+}
+
 function formatFileSize(bytes: number | null) {
   if (!bytes) return 'Unknown size'
 
@@ -77,6 +90,21 @@ function App() {
 
   const fileInputRef =
     useRef<HTMLInputElement>(null)
+  
+  const [question, setQuestion] =
+  useState('')
+
+  const [answer, setAnswer] =
+  useState('')
+
+  const [answerSources, setAnswerSources] =
+  useState<SearchSource[]>([])
+
+  const [isAsking, setIsAsking] =
+  useState(false)
+
+  const [askError, setAskError] =
+  useState('')
 
   async function checkBackend() {
     try {
@@ -154,6 +182,65 @@ function App() {
     setIsLoadingDocument(false)
   }
   }
+  async function askQuestion(
+  event: FormEvent
+) {
+  event.preventDefault()
+
+  const cleanQuestion =
+    question.trim()
+
+  if (!cleanQuestion) {
+    return
+  }
+
+  try {
+    setIsAsking(true)
+    setAskError('')
+    setAnswer('')
+    setAnswerSources([])
+
+    const response = await fetch(
+      `${API_URL}/api/ask`,
+      {
+        method: 'POST',
+
+        headers: {
+          'Content-Type':
+            'application/json',
+        },
+
+        body: JSON.stringify({
+          question: cleanQuestion,
+          
+        }),
+      }
+    )
+
+    if (!response.ok) {
+      throw new Error(
+        'Could not generate an answer'
+      )
+    }
+
+    const data: AskResponse =
+      await response.json()
+
+    setAnswer(data.answer)
+    setAnswerSources(data.sources)
+
+  } catch (error) {
+    if (error instanceof Error) {
+      setAskError(error.message)
+    } else {
+      setAskError(
+        'Could not generate an answer'
+      )
+    }
+  } finally {
+    setIsAsking(false)
+  }
+}
   async function deleteDocument(
   documentId: number
 ) {
@@ -515,6 +602,155 @@ function App() {
         </form>
       </section>
 
+      <section className="aiSection">
+  <div className="sectionHeader">
+    <div>
+      <span className="aiBadge">
+        RAG Assistant
+      </span>
+
+      <h2>
+        Ask your Knowledge Base
+      </h2>
+
+      <p>
+        Ask questions about your uploaded
+        documents. The assistant retrieves
+        relevant information and answers
+        using local AI.
+      </p>
+    </div>
+  </div>
+
+  <form
+    className="askForm"
+    onSubmit={askQuestion}
+  >
+    <textarea
+      value={question}
+      onChange={(event) =>
+        setQuestion(
+          event.target.value
+        )
+      }
+      placeholder="Ask something about your documents..."
+    />
+
+    <button
+      type="submit"
+      disabled={
+        isAsking ||
+        !question.trim()
+      }
+    >
+      {isAsking
+        ? 'Thinking...'
+        : 'Ask AI'}
+    </button>
+  </form>
+
+  {askError && (
+    <div className="aiError">
+      {askError}
+    </div>
+  )}
+
+  {isAsking && (
+    <div className="thinkingBox">
+      <div className="thinkingDot" />
+
+      <div>
+        <strong>
+          Searching knowledge base...
+        </strong>
+
+        <p>
+          Retrieving relevant chunks and
+          generating an answer locally.
+        </p>
+      </div>
+    </div>
+  )}
+
+  {answer && (
+    <div className="answerCard">
+      <div className="answerHeader">
+        <span className="aiAvatar">
+          AI
+        </span>
+
+        <div>
+          <strong>
+            Knowledge Assistant
+          </strong>
+
+          <span>
+            Local RAG response
+          </span>
+        </div>
+      </div>
+
+      <div className="answerText">
+        {answer}
+      </div>
+
+      {answerSources.length > 0 && (
+        <div className="sourcesSection">
+          <h3>
+            Best Source
+          </h3>
+
+          <div className="sourceGrid">
+            {answerSources.map(
+              (source, index) => (
+                <button
+                  type="button"
+                  className="sourceCard"
+                  key={
+                    `${source.document_id}-${source.chunk_index}`
+                  }
+                  onClick={() =>
+                    openDocument(
+                      source.document_id
+                    )
+                  }
+                >
+                  <div className="sourceTop">
+                    <span>
+                      Source {index + 1}
+                    </span>
+
+                    <span>
+                      {(
+                        source.similarity *
+                        100
+                      ).toFixed(1)}
+                      % match
+                    </span>
+                  </div>
+
+                  <strong>
+                    {source.document_name}
+                  </strong>
+
+                  <p>
+                    {source.content}
+                  </p>
+
+                  <small>
+                    Chunk{' '}
+                    {source.chunk_index}
+                  </small>
+                </button>
+              )
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  )}
+        </section>
+
       <section className="knowledgeSection">
         <div className="sectionHeader">
           <div>
@@ -614,6 +850,8 @@ function App() {
           </div>
         )}
       </section>
+      
+
         {selectedDocument && (
           <section className="documentDetail">
             ...

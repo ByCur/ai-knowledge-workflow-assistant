@@ -13,6 +13,13 @@ class Settings(BaseSettings):
         env_file=".env",
         extra="ignore"
     )
+    embedding_model: str = (
+    "sentence-transformers/"
+    "paraphrase-multilingual-MiniLM-L12-v2"
+    )
+
+    ollama_url: str = "http://host.docker.internal:11434"
+    ollama_model: str = "llama3.2:3b"
 
 
 settings = Settings()
