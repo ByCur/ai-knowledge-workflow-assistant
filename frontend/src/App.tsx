@@ -1,121 +1,151 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
+import { FormEvent, useEffect, useState } from 'react'
 import './App.css'
 
+const API_URL =
+  import.meta.env.VITE_API_URL ||
+  'http://localhost:8000'
+
+type Document = {
+  id: number
+  name: string
+  description: string
+  status: string
+  created_at: string
+}
+
 function App() {
-  const [count, setCount] = useState(0)
+  const [documents, setDocuments] =
+    useState<Document[]>([])
+
+  const [name, setName] = useState('')
+  const [description, setDescription] =
+    useState('')
+
+  const [backendStatus, setBackendStatus] =
+    useState('Checking backend...')
+
+  async function checkBackend() {
+    try {
+      const response = await fetch(
+        `${API_URL}/health`
+      )
+
+      const data = await response.json()
+
+      if (
+        data.status === 'ok' &&
+        data.database === 'connected'
+      ) {
+        setBackendStatus(
+          'Backend and PostgreSQL connected'
+        )
+      } else {
+        setBackendStatus('Backend error')
+      }
+    } catch {
+      setBackendStatus('Backend unavailable')
+    }
+  }
+
+  async function loadDocuments() {
+    const response = await fetch(
+      `${API_URL}/api/documents`
+    )
+
+    const data = await response.json()
+
+    setDocuments(data)
+  }
+
+  async function createDocument(
+    event: FormEvent
+  ) {
+    event.preventDefault()
+
+    if (!name.trim()) return
+
+    await fetch(`${API_URL}/api/documents`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name,
+        description,
+      }),
+    })
+
+    setName('')
+    setDescription('')
+
+    await loadDocuments()
+  }
+
+  useEffect(() => {
+    checkBackend()
+    loadDocuments()
+  }, [])
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
+    <main>
+      <h1>AI Knowledge & Workflow Assistant</h1>
+
+      <p>
+        Upload, organize and interact with your
+        knowledge using AI.
+      </p>
+
+      <p>
+        <strong>Status:</strong>{' '}
+        {backendStatus}
+      </p>
+
+      <hr />
+
+      <h2>Add a document</h2>
+
+      <form onSubmit={createDocument}>
+        <input
+          value={name}
+          onChange={(event) =>
+            setName(event.target.value)
+          }
+          placeholder="Document name"
+        />
+
+        <input
+          value={description}
+          onChange={(event) =>
+            setDescription(event.target.value)
+          }
+          placeholder="Description"
+        />
+
+        <button type="submit">
+          Add document
         </button>
-      </section>
+      </form>
 
-      <div className="ticks"></div>
+      <h2>Knowledge Base</h2>
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+      {documents.length === 0 ? (
+        <p>No documents yet.</p>
+      ) : (
+        <ul>
+          {documents.map((document) => (
+            <li key={document.id}>
+              <strong>{document.name}</strong>
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+              <p>{document.description}</p>
+
+              <small>
+                Status: {document.status}
+              </small>
+            </li>
+          ))}
+        </ul>
+      )}
+    </main>
   )
 }
 

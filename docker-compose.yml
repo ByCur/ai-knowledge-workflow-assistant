@@ -1,0 +1,25 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: ai-knowledge-db
+    restart: unless-stopped
+
+    environment:
+      POSTGRES_DB: aiassistant
+      POSTGRES_USER: aiassistant
+      POSTGRES_PASSWORD: aiassistant_password
+
+    ports:
+      - "5433:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aiassistant -d aiassistant"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
