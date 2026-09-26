@@ -3,3 +3,5 @@ uvicorn[standard]
 psycopg[binary]
 sqlalchemy
 pydantic-settings
+python-multipart
+pypdf

@@ -22,3 +22,6 @@ Thumbs.db
 # Test coverage
 coverage/
 htmlcov/
+
+backend/uploads/*
+!backend/uploads/.gitkeep

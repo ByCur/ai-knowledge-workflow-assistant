@@ -1,3 +1,17 @@
+from pathlib import Path
+from uuid import uuid4
+
+from fastapi import (
+    Depends,
+    FastAPI,
+    File,
+    Form,
+    HTTPException,
+    UploadFile,
+)
+
+from .document_service import extract_text
+
 from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
@@ -12,7 +26,17 @@ from .database import (
     get_db,
 )
 from .models import Document
-from .schemas import DocumentCreate, DocumentResponse
+from .schemas import DocumentResponse
+
+UPLOAD_DIR = Path("uploads")
+UPLOAD_DIR.mkdir(exist_ok=True)
+
+ALLOWED_CONTENT_TYPES = {
+    "application/pdf",
+    "text/plain",
+}
+
+MAX_FILE_SIZE = 10 * 1024 * 1024
 
 
 @asynccontextmanager
@@ -90,21 +114,64 @@ def list_documents(
 
 
 @app.post(
-    "/api/documents",
+    "/api/documents/upload",
     response_model=DocumentResponse,
     status_code=201,
 )
-def create_document(
-    document: DocumentCreate,
+async def upload_document(
+    file: UploadFile = File(...),
+    description: str = Form(""),
     db: Session = Depends(get_db),
 ):
-    new_document = Document(
-        name=document.name,
-        description=document.description,
+    if file.content_type not in ALLOWED_CONTENT_TYPES:
+        raise HTTPException(
+            status_code=400,
+            detail="Only PDF and TXT files are supported",
+        )
+
+    contents = await file.read()
+
+    if len(contents) > MAX_FILE_SIZE:
+        raise HTTPException(
+            status_code=400,
+            detail="File exceeds the 10 MB limit",
+        )
+
+    original_filename = file.filename or "document"
+
+    safe_filename = (
+        f"{uuid4()}_{Path(original_filename).name}"
     )
 
-    db.add(new_document)
-    db.commit()
-    db.refresh(new_document)
+    file_path = UPLOAD_DIR / safe_filename
+    file_path.write_bytes(contents)
 
-    return new_document
+    try:
+        extracted_text = extract_text(
+            file_path,
+            file.content_type,
+        )
+    except Exception as error:
+        file_path.unlink(missing_ok=True)
+
+        raise HTTPException(
+            status_code=400,
+            detail=f"Could not process document: {error}",
+        )
+
+    document = Document(
+        name=original_filename,
+        description=description,
+        original_filename=original_filename,
+        content_type=file.content_type,
+        file_path=str(file_path),
+        file_size=len(contents),
+        extracted_text=extracted_text,
+        status="processed",
+    )
+
+    db.add(document)
+    db.commit()
+    db.refresh(document)
+
+    return document

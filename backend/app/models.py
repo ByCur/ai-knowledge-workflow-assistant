@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, String, Text, func
+from sqlalchemy import DateTime, Integer, String, Text, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from .database import Base
@@ -25,9 +25,35 @@ class Document(Base):
         nullable=False
     )
 
+    original_filename: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True
+    )
+
+    content_type: Mapped[str | None] = mapped_column(
+        String(100),
+        nullable=True
+    )
+
+    file_path: Mapped[str | None] = mapped_column(
+        String(500),
+        nullable=True
+    )
+
+    file_size: Mapped[int | None] = mapped_column(
+        Integer,
+        nullable=True
+    )
+
+    extracted_text: Mapped[str] = mapped_column(
+        Text,
+        default="",
+        nullable=False
+    )
+
     status: Mapped[str] = mapped_column(
         String(50),
-        default="created",
+        default="uploaded",
         nullable=False
     )
 
