@@ -42,6 +42,26 @@ type AskResponse = {
   sources: SearchSource[]
 }
 
+type WorkflowTask = {
+  id: number
+  title: string
+  description: string
+  status: string
+  source_document_id: number | null
+  created_at: string
+}
+
+type AgentAction = {
+  tool: string
+  arguments: Record<string, unknown>
+  result: unknown
+}
+
+type AgentResponse = {
+  answer: string
+  actions: AgentAction[]
+}
+
 function formatFileSize(bytes: number | null) {
   if (!bytes) return 'Unknown size'
 
@@ -104,6 +124,24 @@ function App() {
   useState(false)
 
   const [askError, setAskError] =
+  useState('')
+
+  const [tasks, setTasks] =
+  useState<WorkflowTask[]>([])
+
+  const [agentInstruction, setAgentInstruction] =
+  useState('')
+
+  const [agentAnswer, setAgentAnswer] =
+  useState('')
+
+  const [agentActions, setAgentActions] =
+  useState<AgentAction[]>([])
+
+  const [isRunningAgent, setIsRunningAgent] =
+  useState(false)
+
+  const [agentError, setAgentError] =
   useState('')
 
   async function checkBackend() {
@@ -431,9 +469,124 @@ function App() {
     }
   }
 
+  async function loadTasks() {
+  try {
+    const response = await fetch(
+      `${API_URL}/api/tasks`
+    )
+
+    if (!response.ok) {
+      throw new Error(
+        'Could not load tasks'
+      )
+    }
+
+    const data =
+      await response.json()
+
+    setTasks(data)
+  } catch {
+    console.error(
+      'Could not load tasks'
+    )
+  }
+}
+  async function runWorkflowAgent(
+  event: FormEvent
+) {
+  event.preventDefault()
+
+  const instruction =
+    agentInstruction.trim()
+
+  if (!instruction) return
+
+  try {
+    setIsRunningAgent(true)
+    setAgentError('')
+    setAgentAnswer('')
+    setAgentActions([])
+
+    const response = await fetch(
+      `${API_URL}/api/agent`,
+      {
+        method: 'POST',
+
+        headers: {
+          'Content-Type':
+            'application/json',
+        },
+
+        body: JSON.stringify({
+          instruction,
+        }),
+      }
+    )
+
+    if (!response.ok) {
+      throw new Error(
+        'Agent request failed'
+      )
+    }
+
+    const data: AgentResponse =
+      await response.json()
+
+    setAgentAnswer(data.answer)
+    setAgentActions(data.actions)
+
+    await loadTasks()
+
+  } catch (error) {
+    if (error instanceof Error) {
+      setAgentError(error.message)
+    } else {
+      setAgentError(
+        'Agent request failed'
+      )
+    }
+  } finally {
+    setIsRunningAgent(false)
+  }
+}
+  async function completeWorkflowTask(
+  taskId: number
+) {
+  await fetch(
+    `${API_URL}/api/tasks/${taskId}/complete`,
+    {
+      method: 'PATCH',
+    }
+  )
+
+  await loadTasks()
+}
+
+
+async function deleteWorkflowTask(
+  taskId: number
+) {
+  const confirmed =
+    window.confirm(
+      'Delete this task?'
+    )
+
+  if (!confirmed) return
+
+  await fetch(
+    `${API_URL}/api/tasks/${taskId}`,
+    {
+      method: 'DELETE',
+    }
+  )
+
+  await loadTasks()
+}
+
   useEffect(() => {
     checkBackend()
     loadDocuments()
+    loadTasks()
   }, [])
 
   return (
@@ -697,51 +850,158 @@ function App() {
       {answerSources.length > 0 && (
         <div className="sourcesSection">
           <h3>
-            Best Source
+            Top Sources
           </h3>
 
           <div className="sourceGrid">
             {answerSources.map(
-              (source, index) => (
-                <button
-                  type="button"
-                  className="sourceCard"
-                  key={
-                    `${source.document_id}-${source.chunk_index}`
-                  }
-                  onClick={() =>
-                    openDocument(
-                      source.document_id
-                    )
-                  }
+  (source, index) => (
+    <button
+      type="button"
+      className="sourceCard"
+      key={`${source.document_id}-${source.chunk_index}`}
+      onClick={() =>
+        openDocument(
+          source.document_id
+        )
+      }
+    >
+      <div className="sourceTop">
+        <span>
+          Source {index + 1}
+        </span>
+
+        <span>
+          {(source.similarity * 100).toFixed(1)}% match
+        </span>
+      </div>
+
+      <strong>
+        {source.document_name}
+      </strong>
+
+      <p>
+        {source.content}
+      </p>
+
+      <small>
+        Chunk {source.chunk_index}
+      </small>
+    </button>
+  )
+)}
+          </div>
+        </div>
+      )}
+    </div>
+  )}
+        </section>
+      <section className="agentSection">
+  <div className="sectionHeader">
+    <div>
+      <span className="agentBadge">
+        AI AGENT
+      </span>
+
+      <h2>
+        Workflow Agent
+      </h2>
+
+      <p>
+        Give the agent an instruction.
+        It can search your documents and
+        manage tasks using tools.
+      </p>
+    </div>
+  </div>
+
+  <form
+    className="agentForm"
+    onSubmit={runWorkflowAgent}
+  >
+    <textarea
+      value={agentInstruction}
+      onChange={(event) =>
+        setAgentInstruction(
+          event.target.value
+        )
+      }
+      placeholder="Example: Busca en mi tutorial de Docker y créame 3 tareas para estudiarlo"
+    />
+
+    <button
+      type="submit"
+      disabled={
+        isRunningAgent ||
+        !agentInstruction.trim()
+      }
+    >
+      {isRunningAgent
+        ? 'Agent working...'
+        : 'Run Agent'}
+    </button>
+  </form>
+
+  {agentError && (
+    <div className="aiError">
+      {agentError}
+    </div>
+  )}
+
+  {isRunningAgent && (
+    <div className="thinkingBox">
+      <div className="thinkingDot" />
+
+      <div>
+        <strong>
+          Agent is working...
+        </strong>
+
+        <p>
+          Deciding which tools to use
+          and executing the workflow.
+        </p>
+      </div>
+    </div>
+  )}
+
+  {agentAnswer && (
+    <div className="agentResult">
+      <div className="answerHeader">
+        <span className="agentAvatar">
+          ⚡
+        </span>
+
+        <div>
+          <strong>
+            Workflow Agent
+          </strong>
+
+          <span>
+            Agentic execution
+          </span>
+        </div>
+      </div>
+
+      <div className="answerText">
+        {agentAnswer}
+      </div>
+
+      {agentActions.length > 0 && (
+        <div className="actionsUsed">
+          <strong>
+            Tools executed
+          </strong>
+
+          <div className="toolList">
+            {agentActions.map(
+              (action,index) => (
+                <span
+                  key={`${action.tool}-${index}`}
+                  className="toolChip"
                 >
-                  <div className="sourceTop">
-                    <span>
-                      Source {index + 1}
-                    </span>
-
-                    <span>
-                      {(
-                        source.similarity *
-                        100
-                      ).toFixed(1)}
-                      % match
-                    </span>
-                  </div>
-
-                  <strong>
-                    {source.document_name}
-                  </strong>
-
-                  <p>
-                    {source.content}
-                  </p>
-
-                  <small>
-                    Chunk{' '}
-                    {source.chunk_index}
-                  </small>
-                </button>
+                  {index + 1}. {action.tool}
+                </span>
               )
             )}
           </div>
@@ -749,8 +1009,113 @@ function App() {
       )}
     </div>
   )}
-        </section>
+</section>
+      <section className="tasksSection">
+  <div className="sectionHeader">
+    <div>
+      <span className="tasksBadge">
+        WORKFLOWS
+      </span>
 
+      <h2>
+        Task Board
+      </h2>
+
+      <p>
+        Tasks created manually or by
+        your AI workflow agent.
+      </p>
+    </div>
+
+    <span className="taskCount">
+      {
+        tasks.filter(
+          task =>
+            task.status === 'pending'
+        ).length
+      }{' '}
+      pending
+    </span>
+  </div>
+
+  {tasks.length === 0 ? (
+    <div className="emptyState">
+      <h3>No tasks yet</h3>
+
+      <p>
+        Ask the workflow agent to create
+        your first tasks.
+      </p>
+    </div>
+  ) : (
+    <div className="taskGrid">
+      {tasks.map(task => (
+        <article
+          className={`workflowTask ${
+            task.status === 'completed'
+              ? 'completed'
+              : ''
+          }`}
+          key={task.id}
+        >
+          <div className="taskHeader">
+            <span
+              className={`taskStatus ${task.status}`}
+            >
+              {task.status}
+            </span>
+
+            <span className="taskId">
+              #{task.id}
+            </span>
+          </div>
+
+          <h3>
+            {task.title}
+          </h3>
+
+          <p>
+            {task.description ||
+              'No description'}
+          </p>
+
+          {task.source_document_id && (
+            <small>
+              Source document #
+              {task.source_document_id}
+            </small>
+          )}
+
+          <div className="taskActions">
+            {task.status !==
+              'completed' && (
+              <button
+                onClick={() =>
+                  completeWorkflowTask(
+                    task.id
+                  )
+                }
+              >
+                Complete
+              </button>
+            )}
+
+            <button
+              className="taskDelete"
+              onClick={() =>
+                deleteWorkflowTask(
+                  task.id
+                )
+              }
+            >
+              Delete
+            </button>
+          </div>
+        </article>
+      ))}
+    </div>
+  )}
+</section>
       <section className="knowledgeSection">
         <div className="sectionHeader">
           <div>

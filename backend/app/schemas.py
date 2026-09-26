@@ -57,3 +57,29 @@ class AskRequest(BaseModel):
 class AskResponse(BaseModel):
     answer: str
     sources: list[SearchResult]
+
+class TaskCreate(BaseModel):
+    title: str
+    description: str = ""
+    source_document_id: int | None = None
+
+
+class TaskResponse(BaseModel):
+    id: int
+    title: str
+    description: str
+    status: str
+    source_document_id: int | None
+    created_at: datetime
+
+    model_config = ConfigDict(
+        from_attributes=True
+    )
+
+class AgentRequest(BaseModel):
+    instruction: str
+
+
+class AgentResponse(BaseModel):
+    answer: str
+    actions: list[dict]

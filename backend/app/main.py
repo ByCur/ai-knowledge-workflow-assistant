@@ -11,6 +11,7 @@ from fastapi import (
 )
 
 from .document_service import extract_text
+from .agent_service import run_agent
 
 from contextlib import asynccontextmanager
 from .schemas import DocumentDetailResponse, DocumentResponse
@@ -30,14 +31,18 @@ from .database import (
 from .retrieval_service import (
     retrieve_relevant_chunks,
 )
-from .models import Document, DocumentChunk
+from .models import Document, DocumentChunk, Task
 from .schemas import (
     ChunkResponse,
     DocumentDetailResponse,
     DocumentResponse,
     IndexDocumentResponse,
+    AgentRequest,
+    AgentResponse,
     SearchRequest,
     AskRequest,
+    TaskCreate,
+    TaskResponse,
     AskResponse,
     SearchResult,
 )
@@ -401,5 +406,106 @@ def ask_question(
 
     return {
         "answer": answer,
-        "sources": sources,
+        "sources": sources[:1],
     }
+
+@app.post(
+    "/api/tasks",
+    response_model=TaskResponse,
+    status_code=201,
+)
+def create_task(
+    task: TaskCreate,
+    db: Session = Depends(get_db),
+):
+    new_task = Task(
+        title=task.title,
+        description=task.description,
+        source_document_id=task.source_document_id,
+    )
+
+    db.add(new_task)
+    db.commit()
+    db.refresh(new_task)
+
+    return new_task
+
+@app.get(
+    "/api/tasks",
+    response_model=list[TaskResponse],
+)
+def list_tasks(
+    db: Session = Depends(get_db),
+):
+    result = db.execute(
+        select(Task).order_by(
+            Task.created_at.desc()
+        )
+    )
+
+    return result.scalars().all()
+
+@app.patch(
+    "/api/tasks/{task_id}/complete",
+    response_model=TaskResponse,
+)
+def complete_task(
+    task_id: int,
+    db: Session = Depends(get_db),
+):
+    task = db.get(
+        Task,
+        task_id,
+    )
+
+    if not task:
+        raise HTTPException(
+            status_code=404,
+            detail="Task not found",
+        )
+
+    task.status = "completed"
+
+    db.commit()
+    db.refresh(task)
+
+    return task
+
+@app.delete(
+    "/api/tasks/{task_id}",
+)
+def delete_task(
+    task_id: int,
+    db: Session = Depends(get_db),
+):
+    task = db.get(
+        Task,
+        task_id,
+    )
+
+    if not task:
+        raise HTTPException(
+            status_code=404,
+            detail="Task not found",
+        )
+
+    db.delete(task)
+    db.commit()
+
+    return {
+        "message": "Task deleted successfully",
+        "id": task_id,
+    }
+
+@app.post(
+    "/api/agent",
+    response_model=AgentResponse,
+)
+def execute_agent(
+    request: AgentRequest,
+    db: Session = Depends(get_db),
+):
+    return run_agent(
+        db=db,
+        instruction=request.instruction,
+    )
