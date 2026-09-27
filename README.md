@@ -10,7 +10,7 @@ The entire AI pipeline runs locally using Ollama and Sentence Transformers, with
 
 # AI Knowledge & Workflow Assistant
 
-[![CI](...)](...)
+[![CI](https://github.com/ByCur/ai-knowledge-workflow-assistant/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ByCur/ai-knowledge-workflow-assistant/actions/workflows/ci.yml)
 
 ## Features
 
