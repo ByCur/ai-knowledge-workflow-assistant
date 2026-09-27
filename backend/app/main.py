@@ -18,7 +18,7 @@ from .schemas import DocumentDetailResponse, DocumentResponse
 from .rag_service import generate_answer
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy import delete, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 from .chunking_service import chunk_text
 from .embedding_service import create_embeddings
@@ -418,6 +418,21 @@ def create_task(
     task: TaskCreate,
     db: Session = Depends(get_db),
 ):
+    existing_task = db.execute(
+    select(Task).where(
+        func.lower(Task.title)
+        == task.title.strip().lower(),
+        Task.status == "pending",
+        Task.source_document_id
+        == task.source_document_id,
+        )
+        ).scalar_one_or_none()
+
+    if existing_task:
+             raise HTTPException(
+        status_code=409,
+        detail="A pending task with this title already exists",
+    )
     new_task = Task(
         title=task.title,
         description=task.description,

@@ -8,3 +8,5 @@ pypdf
 sentence-transformers
 pgvector
 httpx
+pytest
+pytest-mock

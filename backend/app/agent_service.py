@@ -114,6 +114,17 @@ IMPORTANT RULES:
   that you have just created. The successful
   create_task result is sufficient confirmation.
 
+- Never intentionally create duplicate pending tasks.
+
+- If create_task reports that a task already exists,
+  do not create the same task again.
+
+- If the user requested multiple tasks and one proposed
+  task is a duplicate, create a different relevant task
+  instead.
+
+- Task titles should describe distinct actions.
+
 EXAMPLE:
 
 User:
@@ -135,6 +146,45 @@ After receiving the tool result, return:
 }
 """.strip()
 
+import re
+
+
+def get_requested_task_count(
+    instruction: str,
+) -> int | None:
+    match = re.search(
+        r"\b(\d+)\s+(?:tareas|tasks)\b",
+        instruction.lower(),
+    )
+
+    if not match:
+        return None
+
+    return int(match.group(1))
+
+
+def has_completion_intent(
+    instruction: str,
+) -> bool:
+    instruction_lower = instruction.lower()
+
+    phrases = [
+        "completa la tarea",
+        "completar la tarea",
+        "marca como completada",
+        "marca como hecha",
+        "termina la tarea",
+        "finaliza la tarea",
+        "complete the task",
+        "mark as completed",
+        "mark as done",
+    ]
+
+    return any(
+        phrase in instruction_lower
+        for phrase in phrases
+    )
+
 
 def run_agent(
     db: Session,
@@ -154,7 +204,11 @@ def run_agent(
 
     executed_actions = []
 
-    requested_task_count = None
+    requested_task_count = (
+    get_requested_task_count(
+        instruction
+    )
+)
 
     match = re.search(
         r"\b(\d+)\s+(?:tareas|tasks)\b",
@@ -258,7 +312,12 @@ def run_agent(
             or {}
         )
 
-        if tool_name == "complete_task":
+        if (
+    tool_name == "complete_task"
+    and not has_completion_intent(
+        instruction
+    )
+):
             instruction_lower = instruction.lower()
 
             completion_intent = any(
@@ -332,9 +391,17 @@ def run_agent(
         ):
             created_tasks = [
                 action
-                for action in executed_actions
-                if action["tool"] == "create_task"
-                and "error" not in action["result"]
+                    for action in executed_actions
+                        if (
+                            action["tool"] == "create_task"
+                            and isinstance(
+                            action["result"],
+                            dict,
+                            )
+                    and action["result"].get(
+                    "created"
+                ) is True
+            )
             ]
 
             if (

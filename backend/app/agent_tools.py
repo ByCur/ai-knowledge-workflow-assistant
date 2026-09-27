@@ -1,4 +1,4 @@
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from .models import Task
@@ -23,9 +23,34 @@ def create_task_tool(
     description: str = "",
     source_document_id: int | None = None,
 ):
+    clean_title = title.strip()
+
+    existing_task = db.execute(
+        select(Task).where(
+            func.lower(Task.title)
+            == clean_title.lower(),
+            Task.status == "pending",
+            Task.source_document_id
+            == source_document_id,
+        )
+    ).scalar_one_or_none()
+
+    if existing_task:
+        return {
+            "created": False,
+            "duplicate": True,
+            "id": existing_task.id,
+            "title": existing_task.title,
+            "status": existing_task.status,
+            "message": (
+                "A pending task with this title "
+                "already exists."
+            ),
+        }
+
     task = Task(
-        title=title,
-        description=description,
+        title=clean_title,
+        description=description.strip(),
         source_document_id=source_document_id,
     )
 
@@ -34,6 +59,8 @@ def create_task_tool(
     db.refresh(task)
 
     return {
+        "created": True,
+        "duplicate": False,
         "id": task.id,
         "title": task.title,
         "description": task.description,
