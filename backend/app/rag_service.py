@@ -1,4 +1,4 @@
-import httpx
+from .llm_service import generate_chat
 
 from .config import settings
 
@@ -71,30 +71,15 @@ USER QUESTION:
 Answer only from the context above.
 """.strip()
 
-    response = httpx.post(
-        f"{settings.ollama_url}/api/chat",
-        json={
-            "model": settings.ollama_model,
-            "stream": False,
-            "messages": [
-                {
-                    "role": "system",
-                    "content": system_prompt,
-                },
-                {
-                    "role": "user",
-                    "content": user_prompt,
-                },
-            ],
-            "options": {
-                "temperature": 0,
-            },
+    return generate_chat(
+    messages=[
+        {
+            "role": "system",
+            "content": system_prompt,
         },
-        timeout=120.0,
-    )
-
-    response.raise_for_status()
-
-    data = response.json()
-
-    return data["message"]["content"]
+        {
+            "role": "user",
+            "content": user_prompt,
+        },
+    ]
+)

@@ -10,3 +10,4 @@ pgvector
 httpx
 pytest
 pytest-mock
+google-genai

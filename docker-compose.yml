@@ -37,6 +37,8 @@ services:
       
       DATABASE_URL: postgresql+psycopg://aiassistant:aiassistant_password@db:5432/aiassistant
       CORS_ORIGINS: http://localhost:5173
+      AI_PROVIDER: ${AI_PROVIDER:-ollama}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       
 
     ports:

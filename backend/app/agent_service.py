@@ -1,6 +1,6 @@
 import json
 import re
-import httpx
+from .llm_service import generate_chat
 from sqlalchemy.orm import Session
 
 from .agent_tools import (
@@ -221,27 +221,9 @@ def run_agent(
         )
 
     for _ in range(10):
-        response = httpx.post(
-            f"{settings.ollama_url}/api/chat",
-            json={
-                "model":
-                    settings.ollama_model,
-                "stream": False,
-                "format": "json",
-                "messages": messages,
-                "options": {
-                    "temperature": 0,
-                },
-            },
-            timeout=120.0,
-        )
-
-        response.raise_for_status()
-
-        raw_content = (
-            response.json()
-            ["message"]
-            ["content"]
+        raw_content = generate_chat(
+        messages=messages,
+        json_mode=True,
         )
 
         try:

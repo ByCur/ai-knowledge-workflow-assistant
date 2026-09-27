@@ -13,12 +13,20 @@ class Settings(BaseSettings):
         env_file=".env",
         extra="ignore"
     )
+
     embedding_model: str = (
     "sentence-transformers/"
     "paraphrase-multilingual-MiniLM-L12-v2"
     )
+    ai_provider: str = "ollama"
+    
+    gemini_api_key: str = ""
 
-    ollama_url: str = "http://host.docker.internal:11434"
+    gemini_model: str = (
+    "gemini-3.5-flash-lite"
+    )
+
+    ollama_url: str = ("http://host.docker.internal:11434")
     ollama_model: str = "llama3.2:3b"
 
 
