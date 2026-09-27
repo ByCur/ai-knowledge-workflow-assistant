@@ -8,6 +8,10 @@ The entire AI pipeline runs locally using Ollama and Sentence Transformers, with
 
 ---
 
+# AI Knowledge & Workflow Assistant
+
+[![CI](...)](...)
+
 ## Features
 
 ### Document Knowledge Base
