@@ -421,27 +421,19 @@ This ensures changes cannot silently break the backend, TypeScript frontend or D
 
 ### RAG Assistant
 
-```text
-docs/screenshots/rag-assistant.png
-```
+![RAG Assistant](docs/screenshots/rag-assistant.png)
 
 ### Workflow Agent
 
-```text
-docs/screenshots/workflow-agent.png
-```
+![Workflow Agent](docs/screenshots/workflow-agent.png)
 
 ### Task Board
 
-```text
-docs/screenshots/task-board.png
-```
+![Task Board](docs/screenshots/task-board.png)
 
 ### Continuous Integration
 
-```text
-docs/screenshots/ci-pipeline.png
-```
+![CI Pipeline](docs/screenshots/ci-pipeline.png)
 
 ---
 
