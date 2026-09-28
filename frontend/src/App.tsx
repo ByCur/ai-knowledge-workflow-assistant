@@ -90,10 +90,6 @@ function App() {
   const [description, setDescription] =
     useState('')
 
-  const [backendStatus, setBackendStatus] =
-  useState<'checking' | 'available' | 'unavailable'>(
-    'checking'
-  )
 
   const [uploadStatus, setUploadStatus] =
     useState('')
@@ -146,35 +142,7 @@ function App() {
   const [agentError, setAgentError] =
   useState('')
 
-  async function checkBackend() {
-    setBackendStatus('checking')
-
-  for (let attempt = 1; attempt <= 12; attempt++) {
-    try {
-      const response = await fetch(
-        `${API_URL}/health`,
-        {
-          cache: 'no-store',
-        }
-      )
-
-      if (response.ok) {
-        setBackendStatus('available')
-        return
-      }
-    } catch {
-      // Render may still be waking up
-    }
-
-    if (attempt < 12) {
-      await new Promise(resolve =>
-        setTimeout(resolve, 5000)
-      )
-    }
-  }
-
-  setBackendStatus('unavailable')
-  }
+  
 
   async function loadDocuments() {
     try {
@@ -187,7 +155,7 @@ function App() {
           'Could not load documents'
         )
       }
-      setBackendStatus('available')
+      
 
       const data = await response.json()
 
@@ -266,7 +234,7 @@ function App() {
         'Could not generate an answer'
       )
     }
-    setBackendStatus('available')
+    
 
     const data: AskResponse =
       await response.json()
@@ -450,7 +418,7 @@ function App() {
             'Upload failed'
         )
       }
-      setBackendStatus('available')
+   
 
       setUploadStatus(
         'Document processed successfully.'
@@ -536,7 +504,7 @@ function App() {
         'Agent request failed'
       )
     }
-    setBackendStatus('available')
+    
 
     const data: AgentResponse =
       await response.json()
@@ -593,7 +561,7 @@ async function deleteWorkflowTask(
 }
 
   useEffect(() => {
-    checkBackend()
+    
     loadDocuments()
     loadTasks()
   }, [])
@@ -631,15 +599,7 @@ async function deleteWorkflowTask(
       </section>
 
       <section className="statusBar">
-        <span
-          className={`backendStatus ${backendStatus}`}
-        >
-          {backendStatus === 'checking'
-          ? 'Backend waking up...'
-          : backendStatus === 'available'
-            ? 'Backend available'
-            : 'Backend temporarily unavailable'}
-        </span>
+        
 
         <span>
           {documents.length}{' '}
