@@ -10,6 +10,12 @@ The entire AI pipeline runs locally using Ollama and Sentence Transformers, with
 
 [![CI](https://github.com/ByCur/ai-knowledge-workflow-assistant/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/ByCur/ai-knowledge-workflow-assistant/actions/workflows/ci.yml)
 
+**Application:** [Open the live demo](https://ai-knowledge-frontend.onrender.com)
+
+**API Documentation:** [FastAPI Swagger](https://ai-knowledge-workflow-assistant.onrender.com/docs)
+
+> The backend runs on Render's free tier and may take around one minute to wake up after a period of inactivity.
+
 ## Features
 
 ### Document Knowledge Base
