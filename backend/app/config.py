@@ -29,5 +29,13 @@ class Settings(BaseSettings):
     ollama_url: str = ("http://host.docker.internal:11434")
     ollama_model: str = "llama3.2:3b"
 
+    embedding_provider: str = "local"
+
+    gemini_embedding_model: str = (
+    "gemini-embedding-001"
+    )
+
+    embedding_dimensions: int = 384
+
 
 settings = Settings()
