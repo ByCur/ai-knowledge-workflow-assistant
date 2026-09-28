@@ -91,11 +91,9 @@ function App() {
     useState('')
 
   const [backendStatus, setBackendStatus] =
-  useState<
-    'checking' |
-    'available' |
-    'unavailable'
-  >('checking')
+  useState<'checking' | 'available' | 'unavailable'>(
+    'checking'
+  )
 
   const [uploadStatus, setUploadStatus] =
     useState('')
@@ -151,10 +149,13 @@ function App() {
   async function checkBackend() {
     setBackendStatus('checking')
 
-  for (let attempt = 1; attempt <= 4; attempt++) {
+  for (let attempt = 1; attempt <= 12; attempt++) {
     try {
       const response = await fetch(
-        `${API_URL}/health`
+        `${API_URL}/health`,
+        {
+          cache: 'no-store',
+        }
       )
 
       if (response.ok) {
@@ -165,7 +166,7 @@ function App() {
       // Render may still be waking up
     }
 
-    if (attempt < 4) {
+    if (attempt < 12) {
       await new Promise(resolve =>
         setTimeout(resolve, 5000)
       )
@@ -186,6 +187,7 @@ function App() {
           'Could not load documents'
         )
       }
+      setBackendStatus('available')
 
       const data = await response.json()
 
@@ -264,6 +266,7 @@ function App() {
         'Could not generate an answer'
       )
     }
+    setBackendStatus('available')
 
     const data: AskResponse =
       await response.json()
@@ -447,6 +450,7 @@ function App() {
             'Upload failed'
         )
       }
+      setBackendStatus('available')
 
       setUploadStatus(
         'Document processed successfully.'
@@ -532,6 +536,7 @@ function App() {
         'Agent request failed'
       )
     }
+    setBackendStatus('available')
 
     const data: AgentResponse =
       await response.json()
@@ -633,7 +638,7 @@ async function deleteWorkflowTask(
           ? 'Backend waking up...'
           : backendStatus === 'available'
             ? 'Backend available'
-            : 'Backend unavailable'}
+            : 'Backend temporarily unavailable'}
         </span>
 
         <span>
