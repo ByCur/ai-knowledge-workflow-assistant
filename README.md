@@ -1,10 +1,10 @@
 # AI Knowledge & Workflow Assistant
 
-A full-stack AI application that combines document knowledge retrieval, local RAG, semantic search and agentic workflows.
+A full-stack AI application that combines document knowledge retrieval, Retrieval-Augmented Generation (RAG), semantic search and agentic workflows.
 
 Users can upload documents, ask questions about their content and instruct an AI agent to search the knowledge base and execute actions such as creating and managing tasks.
 
-The entire AI pipeline runs locally using Ollama and Sentence Transformers, without requiring a paid external AI API.
+The project supports two AI execution modes: a local stack with Ollama and Sentence Transformers, and a cloud stack using Gemini for generation and embeddings with Neon PostgreSQL + pgvector.
 
 ---
 
@@ -28,14 +28,14 @@ The entire AI pipeline runs locally using Ollama and Sentence Transformers, with
 - Delete documents from the interface
 - Document processing status
 
-### Local RAG Pipeline
+### RAG Pipeline
 
 - Automatic text chunking
-- Multilingual local embeddings
+- Local Sentence Transformers or Gemini embeddings
 - PostgreSQL vector storage with pgvector
 - Semantic similarity search
 - Retrieval of the most relevant document chunks
-- Local LLM inference with Ollama
+- Gemini cloud inference or local Ollama inference
 - Source-aware answers
 - Top relevant sources displayed with similarity scores
 
@@ -111,16 +111,22 @@ flowchart TD
     DOC --> EXT[Text Extraction]
     EXT --> CHUNK[Text Chunking]
 
-    CHUNK --> EMB[Sentence Transformers]
-    EMB --> VECTOR[(PostgreSQL + pgvector)]
+    CHUNK --> EMB{Embedding Provider}
+    EMB --> LOCAL_EMB[Sentence Transformers]
+    EMB --> GEMINI_EMB[Gemini Embeddings]
+    LOCAL_EMB --> VECTOR[(PostgreSQL + pgvector)]
+    GEMINI_EMB --> VECTOR
 
     F --> RAG[RAG Question]
     RAG --> API
-    API --> SEARCH[Semantic Search]
+    API --> SEARCH[Hybrid Retrieval + Reranking]
     SEARCH --> VECTOR
     SEARCH --> CONTEXT[Relevant Chunks]
-    CONTEXT --> LLM[Ollama Local LLM]
-    LLM --> ANSWER[Answer + Sources]
+    CONTEXT --> LLM{LLM Provider}
+    LLM --> OLLAMA[Ollama]
+    LLM --> GEMINI[Gemini]
+    OLLAMA --> ANSWER[Answer + Sources]
+    GEMINI --> ANSWER
     ANSWER --> F
 
     F --> AGENT[Workflow Agent]
@@ -151,34 +157,37 @@ Text extraction
     ↓
 Chunking
     ↓
-Local multilingual embeddings
+Sentence Transformers / Gemini embeddings
     ↓
 pgvector
     ↓
-Semantic similarity search
+Vector search + hybrid reranking
     ↓
 Top relevant chunks
     ↓
-Ollama local LLM
+Ollama / Gemini
     ↓
 Grounded answer + sources
 ```
 
-Documents are converted into semantic vectors using:
+The application supports interchangeable embedding providers.
+
+For local development it can use:
 
 ```text
 sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2
 ```
 
-The embeddings contain 384 dimensions and are stored directly in PostgreSQL using pgvector.
+For the public cloud deployment it uses Gemini embeddings.
 
-The application currently uses:
+Embeddings use 384 dimensions and are stored directly in PostgreSQL using pgvector. Local and cloud embeddings are kept in a consistent vector space per deployment and are not mixed.
 
-```text
-llama3.2:3b
-```
+Language-model generation is also provider-based:
 
-through Ollama for local language-model inference.
+- **Local:** Ollama with `llama3.2:3b`
+- **Cloud:** Gemini
+
+This makes it possible to develop locally without external AI dependencies while keeping the public demo lightweight enough for cloud hosting.
 
 ---
 
@@ -242,11 +251,13 @@ and prevents the model from having unrestricted control over application state.
 
 ### AI / RAG
 
+- Gemini
 - Ollama
 - Llama 3.2
 - Sentence Transformers
 - Multilingual MiniLM embeddings
 - pgvector
+- Hybrid retrieval and reranking
 - Semantic search
 - Retrieval-Augmented Generation
 
@@ -255,12 +266,14 @@ and prevents the model from having unrestricted control over application state.
 - PostgreSQL
 - pgvector
 
-### DevOps
+### DevOps & Cloud
 
 - Docker
 - Docker Compose
 - GitHub Actions
 - pytest
+- Render
+- Neon
 
 ---
 
@@ -281,6 +294,7 @@ ai-knowledge-workflow-assistant/
 │   │   ├── config.py
 │   │   ├── database.py
 │   │   ├── embedding_service.py
+│   │   ├── llm_service.py
 │   │   ├── main.py
 │   │   ├── models.py
 │   │   ├── rag_service.py
@@ -455,7 +469,7 @@ This project demonstrates practical experience with:
 - Vector databases
 - Semantic search
 - Retrieval-Augmented Generation
-- Local language models
+- Cloud and local language-model providers
 - Embedding models
 - AI tool use
 - Agentic workflows
@@ -479,10 +493,9 @@ Possible future extensions include:
 - background document processing
 - improved retrieval and reranking
 - agent execution history
-- production deployment
 
 ---
 
 ## Author
 
-Developed as a full-stack AI engineering portfolio project focused on RAG, local AI and agentic workflow automation.
+Developed as a full-stack AI engineering portfolio project focused on RAG, cloud/local AI integration and agentic workflow automation.
