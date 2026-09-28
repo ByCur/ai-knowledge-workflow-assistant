@@ -54,7 +54,7 @@ services:
     build:
       context: ./frontend
       args:
-        VITE_API_URL: http://localhost:8000
+        VITE_API_URL: ${VITE_API_URL:-http://localhost:8000}
 
     container_name: ai-knowledge-frontend
     restart: unless-stopped

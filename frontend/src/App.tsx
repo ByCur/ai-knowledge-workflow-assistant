@@ -91,7 +91,11 @@ function App() {
     useState('')
 
   const [backendStatus, setBackendStatus] =
-    useState('Checking backend...')
+  useState<
+    'checking' |
+    'available' |
+    'unavailable'
+  >('checking')
 
   const [uploadStatus, setUploadStatus] =
     useState('')
@@ -145,30 +149,30 @@ function App() {
   useState('')
 
   async function checkBackend() {
+    setBackendStatus('checking')
+
+  for (let attempt = 1; attempt <= 4; attempt++) {
     try {
       const response = await fetch(
         `${API_URL}/health`
       )
 
-      const data = await response.json()
-
-      if (
-        data.status === 'ok' &&
-        data.database === 'connected'
-      ) {
-        setBackendStatus(
-          'Backend and PostgreSQL connected'
-        )
-      } else {
-        setBackendStatus(
-          'Backend or database error'
-        )
+      if (response.ok) {
+        setBackendStatus('available')
+        return
       }
     } catch {
-      setBackendStatus(
-        'Backend unavailable'
+      // Render may still be waking up
+    }
+
+    if (attempt < 4) {
+      await new Promise(resolve =>
+        setTimeout(resolve, 5000)
       )
     }
+  }
+
+  setBackendStatus('unavailable')
   }
 
   async function loadDocuments() {
@@ -623,15 +627,13 @@ async function deleteWorkflowTask(
 
       <section className="statusBar">
         <span
-          className={
-            backendStatus.includes(
-              'connected'
-            )
-              ? 'status success'
-              : 'status error'
-          }
+          className={`backendStatus ${backendStatus}`}
         >
-          {backendStatus}
+          {backendStatus === 'checking'
+          ? 'Backend waking up...'
+          : backendStatus === 'available'
+            ? 'Backend available'
+            : 'Backend unavailable'}
         </span>
 
         <span>
