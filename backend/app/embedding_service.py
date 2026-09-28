@@ -2,13 +2,15 @@ from functools import lru_cache
 
 from google import genai
 from google.genai import types
-from sentence_transformers import SentenceTransformer
+
 
 from .config import settings
 
 
 @lru_cache
 def get_local_embedding_model():
+    from sentence_transformers import SentenceTransformer
+
     return SentenceTransformer(
         settings.embedding_model
     )
@@ -68,3 +70,5 @@ def create_embeddings(
         f"Unsupported embedding provider: "
         f"{settings.embedding_provider}"
     )
+
+    
