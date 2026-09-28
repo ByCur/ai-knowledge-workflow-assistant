@@ -591,15 +591,15 @@ async function deleteWorkflowTask(
             Current architecture
           </strong>
 
-          <span>React + TypeScript</span>
-          <span>FastAPI + Python</span>
-          <span>PostgreSQL</span>
-          <span>Docker</span>
+          <p>React + TypeScript</p>
+          <p>FastAPI + Python</p>
+          <p>Gemini AI + Ollama</p>
+          <p>Neon + pgvector</p>
         </div>
       </section>
 
       <section className="statusBar">
-        
+      
 
         <span>
           {documents.length}{' '}
